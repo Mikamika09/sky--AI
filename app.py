@@ -88,9 +88,9 @@ with tab2:
         system_prompt = "あなたは編み物の先生です。ユーザーが計算した作り目と段数を見て、編む時の注意点やモチベーションが上がる言葉を2〜3行で短くフランクに伝えてください。"
         user_message = f"横{target_width}cm、縦{target_length}cmの作品を編むよ！作り目は{cast_on}目で、全部で{total_rows}段だよ！"
         
+        # 💬 Geminiにアドバイスをもらう（一番シンプルで確実な書き方！）
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=user_message,
-            config=types.GenerateContentConfig(system_instruction=system_prompt)
+            model='gemini-2.0-flash', # ←ここは最新の2.0に戻してOK！
+            contents=user_message
         )
         st.success(response.text)
