@@ -1,45 +1,96 @@
 import streamlit as st
 from google import genai
-from google.genai import types # ★細かい設定（キャラ付け）をするための部品を追加！
+from google.genai import types
 
-# 忘れずに自分のAPIキーを貼り付けてね！
-GOOGLE_API_KEY = "ここにAPIキーを入れる"
+# ★ 自分のAPIキーを貼り付けてね！
+GOOGLE_API_KEY = 'あなたのAPIキーをここに貼り付け'
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
-# 1. 画面の見た目を編み物っぽく可愛く！
+# --- 画面の基本設定 ---
+st.set_page_config(page_title="編み物相棒AI", page_icon="🧶", layout="centered")
 st.title("🧶 キラみか専用！編み物相棒AI 🧸")
-st.write("毛糸の色や、編みたいもの、今悩んでることを教えてね！")
 
-# 2. ユーザーが入力する箱
-user_input = st.text_input("例：余ってる赤い毛糸があるんだけど、何作ったらいいかな？")
+# ★ Streamlitの魔法！画面を2つの「タブ」に分ける
+tab1, tab2 = st.tabs(["🎨 完成イメージを作る", "🧮 ゲージ・作り目計算機"])
 
-if st.button("相棒に相談する！"):
-    if user_input:
-        st.write("編み図やアイデアを考え中...💭🧶")
+
+# ==========================================
+# タブ1：完成イメージを作る（画像生成機能）
+# ==========================================
+with tab1:
+    st.header("どんな作品を作りたい？")
+    st.write("頭の中にあるイメージを教えて！AIが写真にして見せてくれるよ✨")
+    
+    image_prompt = st.text_input("例：春らしいパステルカラーの、透かし編みカーディガン")
+    
+    if st.button("完成イメージを見る！"):
+        if image_prompt:
+            st.write("毛糸を魔法で編んでるよ...🪄✨ 少々お待ちを！")
+            
+            try:
+                # キラみかのリストにあった最強の画像生成モデルを使う！
+                result = client.models.generate_images(
+                    model='imagen-4.0-generate-001',
+                    # 画像生成は英語の指示が一番綺麗に出るので、裏側で「手編みの作品」という設定を英語でくっつける
+                    prompt=f"A high quality photo of a beautiful hand-knitted item: {image_prompt}",
+                    config=types.GenerateImagesConfig(
+                        number_of_images=1,
+                        aspect_ratio="1:1" # 真四角の画像にする
+                    )
+                )
+                
+                # AIが作った画像を画面に表示！
+                generated_image_bytes = result.generated_images[0].image.image_bytes
+                st.image(generated_image_bytes, caption="こんな感じの完成イメージはどう！？", use_container_width=True)
+                st.success("モチベーション上がってきたね！さっそく編み始めよう！🔥")
+                
+            except Exception as e:
+                st.error("ごめん！画像を作るのに失敗しちゃった💦 もう一回試してみて！")
+        else:
+            st.warning("どんなものを作りたいか入力してね！")
+
+
+# ==========================================
+# タブ2：ゲージ・作り目計算機
+# ==========================================
+with tab2:
+    st.header("面倒な算数は相棒にお任せ！")
+    st.write("ゲージ（10cm四方の目数・段数）と、作りたいサイズを入力してね。")
+    
+    # 画面を2列に分けてスッキリさせる
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("🧶 あなたのゲージ")
+        gauge_st = st.number_input("10cmあたりの『目数』", min_value=1, value=20)
+        gauge_row = st.number_input("10cmあたりの『段数』", min_value=1, value=26)
         
-        # ★ ここが魔法の「キャラ付け」設定（システムプロンプト）！
-        # ユーザーからは見えない裏側で、AIに「どういうキャラで振る舞うか」を指示します。
-        system_prompt = """
-        あなたは編み物の超プロフェッショナルであり、ユーザー（キラみか）と一緒に楽しく作品を作る最高の相棒です。
-        以下のルールで返答してください。
-        1. とにかく親しみやすく、一緒にワクワクしながら話すこと。
-        2. ユーザーの状況に合わせて「こんな作品を作ってみるのはどう？」と具体的なアイデアを提案すること。
-        3. 提案した作品について、「ここの編み方が少し難しいから、目の詰まり具合に気をつけてね！」「このステッチはこうすると綺麗に仕上がるよ！」など、具体的な技術的アドバイスや注意点を必ず入れること。
-        4. 失敗を恐れず、モチベーションが爆上がりするように全力で応援すること！
-        """
+    with col2:
+        st.subheader("📏 作りたいサイズ")
+        target_width = st.number_input("横幅 (cm)", min_value=1, value=50)
+        target_length = st.number_input("縦の長さ (cm)", min_value=1, value=60)
         
-        # 3. AIに通信！（設定を一緒に送る）
+    if st.button("作り目と段数を計算！"):
+        st.write("---")
+        
+        # 💡 ここはPythonの得意な「算数」！
+        # (作りたい幅 ÷ 10) × 10cmあたりの目数 = 必要な目数
+        cast_on = int((target_width / 10) * gauge_st)
+        total_rows = int((target_length / 10) * gauge_row)
+        
+        st.write("### 🧮 計算結果")
+        st.info(f"✨ 必要な作り目： **{cast_on} 目**")
+        st.info(f"✨ 必要な段数： **{total_rows} 段**")
+        
+        # さらに！計算結果をもとにAIから一言アドバイスをもらう！
+        st.write("相棒からのアドバイス...🤔")
+        
+        system_prompt = "あなたは編み物の先生です。ユーザーが計算した作り目と段数を見て、編む時の注意点やモチベーションが上がる言葉を2〜3行で短くフランクに伝えてください。"
+        user_message = f"横{target_width}cm、縦{target_length}cmの作品を編むよ！作り目は{cast_on}目で、全部で{total_rows}段だよ！"
+        
         response = client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=user_input,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt, # ここでキャラ設定を注入！
-                temperature=0.7 # ちょっと想像力を豊かにする設定
-            )
+            contents=user_message,
+            config=types.GenerateContentConfig(system_instruction=system_prompt)
         )
-        
-        # 4. 相棒からの返事を表示
-        st.write("### 相棒からのアドバイス✨")
-        st.write(response.text)
-    else:
-        st.warning("何か入力してね！")
+        st.success(response.text)
