@@ -90,7 +90,7 @@ with tab2:
         
         # 💬 Geminiにアドバイスをもらう（一番シンプルで確実な書き方！）
         response = client.models.generate_content(
-            model='gemini-2.0-flash', # ←ここは最新の2.0に戻してOK！
+            model='gemini-2.5-flash',
             contents=user_message
         )
         st.success(response.text)
