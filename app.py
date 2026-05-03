@@ -30,7 +30,7 @@ with tab1:
             try:
                 # キラみかのリストにあった最強の画像生成モデルを使う！
                 result = client.models.generate_images(
-                    model='imagen-3.0-generate-001',
+                    model='imagen-4.0-generate-001',
                     # 画像生成は英語の指示が一番綺麗に出るので、裏側で「手編みの作品」という設定を英語でくっつける
                     prompt=f"A high quality photo of a beautiful hand-knitted item: {image_prompt}",
                     config=types.GenerateImagesConfig(
