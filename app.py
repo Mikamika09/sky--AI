@@ -2,8 +2,8 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# ★ 自分のAPIキーを貼り付けてね！
-GOOGLE_API_KEY = 'あなたのAPIキーをここに貼り付け'
+# ★ Streamlitの「秘密の金庫」から鍵を取り出す！
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # --- 画面の基本設定 ---
