@@ -89,7 +89,7 @@ with tab2:
         user_message = f"横{target_width}cm、縦{target_length}cmの作品を編むよ！作り目は{cast_on}目で、全部で{total_rows}段だよ！"
         
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-2.0-flash',
             contents=user_message,
             config=types.GenerateContentConfig(system_instruction=system_prompt)
         )
