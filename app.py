@@ -10,6 +10,26 @@ client = genai.Client(api_key=GOOGLE_API_KEY)
 st.set_page_config(page_title="編み物相棒AI", page_icon="🧶", layout="centered")
 st.title("🧶 キラみか専用！編み物相棒AI 🧸")
 
+# --- 🔓 簡易認証システム ---
+# セッション状態を使って、一度パスワードが通れば再入力しなくていいようにするよ！
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.subheader("🛡️ セキュリティ認証")
+    password = st.text_input("合言葉を入れてね", type="password")
+    if st.button("ログイン"):
+        if password == "n&bku1biu793i": # ← 好きな合言葉に変えてもOK！
+            st.session_state.authenticated = True
+            st.rerun() # 画面をリフレッシュして中身を表示
+        else:
+            st.error("合言葉が違うよ！🤫")
+    st.info("このアプリは関係者専用です。")
+    st.stop() # ここで処理を止めて、下のコード（中身）を見せない
+
+# --- 🏠 アプリの本編（認証が成功した時だけ実行される） ---
+st.success("認証成功！相棒AIを起動したよ🧸✨")
+
 # ★ Streamlitの魔法！画面を2つの「タブ」に分ける
 tab1, tab2 = st.tabs(["🎨 完成イメージを作る", "🧮 ゲージ・作り目計算機"])
 
@@ -28,18 +48,16 @@ with tab1:
             st.write("毛糸を魔法で編んでるよ...🪄✨ 少々お待ちを！")
             
             try:
-                # キラみかのリストにあった最強の画像生成モデルを使う！
+                # キラみかの見つけた最強モデルを指定！
                 result = client.models.generate_images(
                     model='imagen-4.0-generate-001',
-                    # 画像生成は英語の指示が一番綺麗に出るので、裏側で「手編みの作品」という設定を英語でくっつける
                     prompt=f"A high quality photo of a beautiful hand-knitted item: {image_prompt}",
                     config=types.GenerateImagesConfig(
                         number_of_images=1,
-                        aspect_ratio="1:1" # 真四角の画像にする
+                        aspect_ratio="1:1"
                     )
                 )
                 
-                # AIが作った画像を画面に表示！
                 generated_image_bytes = result.generated_images[0].image.image_bytes
                 st.image(generated_image_bytes, caption="こんな感じの完成イメージはどう！？", use_container_width=True)
                 st.success("モチベーション上がってきたね！さっそく編み始めよう！🔥")
@@ -57,7 +75,6 @@ with tab2:
     st.header("面倒な算数は相棒にお任せ！")
     st.write("ゲージ（10cm四方の目数・段数）と、作りたいサイズを入力してね。")
     
-    # 画面を2列に分けてスッキリさせる
     col1, col2 = st.columns(2)
     
     with col1:
@@ -73,8 +90,6 @@ with tab2:
     if st.button("作り目と段数を計算！"):
         st.write("---")
         
-        # 💡 ここはPythonの得意な「算数」！
-        # (作りたい幅 ÷ 10) × 10cmあたりの目数 = 必要な目数
         cast_on = int((target_width / 10) * gauge_st)
         total_rows = int((target_length / 10) * gauge_row)
         
@@ -82,13 +97,10 @@ with tab2:
         st.info(f"✨ 必要な作り目： **{cast_on} 目**")
         st.info(f"✨ 必要な段数： **{total_rows} 段**")
         
-        # さらに！計算結果をもとにAIから一言アドバイスをもらう！
         st.write("相棒からのアドバイス...🤔")
         
-        system_prompt = "あなたは編み物の先生です。ユーザーが計算した作り目と段数を見て、編む時の注意点やモチベーションが上がる言葉を2〜3行で短くフランクに伝えてください。"
-        user_message = f"横{target_width}cm、縦{target_length}cmの作品を編むよ！作り目は{cast_on}目で、全部で{total_rows}段だよ！"
+        user_message = f"あなたは編み物の先生です。横{target_width}cm、縦{target_length}cm、作り目{cast_on}目、全部で{total_rows}段の作品を編むユーザーへ、2〜3行でフランクに励まして。"
         
-        # 💬 Geminiにアドバイスをもらう（一番シンプルで確実な書き方！）
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=user_message
