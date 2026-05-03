@@ -45,7 +45,7 @@ with tab1:
                 st.success("モチベーション上がってきたね！さっそく編み始めよう！🔥")
                 
             except Exception as e:
-                st.error("ごめん！画像を作るのに失敗しちゃった💦 もう一回試してみて！")
+                st.error(f"エラー詳細：{e}")
         else:
             st.warning("どんなものを作りたいか入力してね！")
 
