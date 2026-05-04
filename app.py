@@ -69,72 +69,57 @@ with tab1:
 
 
 # ==========================================
-# タブ2：ゲージ・作り目計算機（超進化版！）
+# タブ2：サイズ提案＆作り目計算機（完全AIお任せ版！）
 # ==========================================
 with tab2:
-    st.header("面倒な算数は相棒にお任せ！")
-    st.write("作りたいアイテムを選ぶか、『その他』で自由に教えてね🧸")
+    st.header("面倒なサイズ決めも算数も、全部相棒にお任せ！")
+    st.write("何を作りたいか教えて！相棒が「おすすめのサイズ」から「必要な目数」まで全部答えるよ🧸")
 
-    # 1. 定番の選択肢（テンプレート）を用意
-    item_presets = {
-        "女性用ザク編みニット": {"w": 60, "l": 65},
-        "男性用ニット帽": {"w": 28, "l": 24},
-        "手編みマフラー": {"w": 20, "l": 180},
-        "ちびくま用セーター": {"w": 15, "l": 12},
-        "その他（自分で入力）": {"w": 50, "l": 50}
-    }
-
-    # セレクトボックスを表示
-    selected_item = st.selectbox("何を作る？", list(item_presets.keys()))
-    
-    # 「その他」が選ばれた時だけ、入力欄を出す魔法！
-    if selected_item == "その他（自分で入力）":
-        target_item_name = st.text_input("何を作るか教えて！", placeholder="例：スマホショルダー、愛犬用腹巻きなど")
-    else:
-        target_item_name = selected_item
-
-    # 選択されたアイテムの標準値をセット
-    default_w = item_presets[selected_item]["w"]
-    default_l = item_presets[selected_item]["l"]
+    # 📏 ユーザーは「作りたいもの」を入力するだけ！サイズの入力欄は削除！
+    target_item_name = st.text_input("何を作りたい？", placeholder="例：スマホショルダー、男性用ニット帽、愛犬用セーターなど")
 
     st.write("---")
-    col1, col2 = st.columns(2)
+    st.subheader("🧶 あなたのゲージ")
+    st.write("※10cm四方を編んだ時の目数と段数を教えてね")
     
+    col1, col2 = st.columns(2)
     with col1:
-        st.subheader("🧶 あなたのゲージ")
         gauge_st = st.number_input("10cmあたりの『目数』", min_value=1, value=10)
+    with col2:
         gauge_row = st.number_input("10cmあたりの『段数』", min_value=1, value=15)
         
-    with col2:
-        st.subheader("📏 作りたいサイズ(cm)")
-        target_width = st.number_input("横幅", min_value=1, value=default_w)
-        target_length = st.number_input("縦の長さ", min_value=1, value=default_l)
-        
-    if st.button("作り目と段数を計算！"):
-        # 入力がない場合のガード
+    if st.button("相棒に全部お任せして計算！"):
         if not target_item_name:
-            st.error("何を作るか入力してね！")
+            st.error("何を作りたいか入力してね！")
         else:
-            st.write("---")
-            cast_on = int((target_width / 10) * gauge_st)
-            total_rows = int((target_length / 10) * gauge_row)
+            st.write("相棒が最適なサイズを考えて計算中...🤔💭🪄")
             
-            st.write(f"### 🧮 {target_item_name} の計算結果")
-            st.info(f"✨ 必要な作り目： **{cast_on} 目**")
-            st.info(f"✨ 必要な段数： **{total_rows} 段**")
-            
-            st.write(f"相棒（Gemini 2.5）が {target_item_name} のコツを伝授...🤔")
-            
-            # AIに「自由入力されたアイテム名」を渡してアドバイスをもらう！
+            # AIに「サイズの提案」から「算数」まで全部やらせる最強のプロンプト！
             user_message = f"""
-            今から「{target_item_name}」を編みます。
-            サイズは 横{target_width}cm × 縦{target_length}cm。
-            計算の結果、作り目{cast_on}目、総段数{total_rows}段になりました。
-            このアイテム（{target_item_name}）を編む時のポイントや、綺麗に仕上げるコツを、編み物の先生としてフランクに教えて！
+            あなたは編み物のプロフェッショナルな相棒です。ユーザーが「{target_item_name}」を編もうとしています。
+            以下の条件に合わせて、ユーザーに最適なアドバイスをマークダウン形式で見やすく出力してください。
+            
+            【条件】
+            ユーザーの毛糸のゲージ：10cmあたり {gauge_st}目、{gauge_row}段
+            
+            【出力してほしい構成】
+            1. 📏 おすすめの標準サイズ
+               - 「{target_item_name}」の一般的なおすすめサイズ（横幅 cm × 縦の長さ cm）を提案してください。
+            2. 🧮 必要な目数と段数
+               - 提案したサイズとゲージから算出した「必要な作り目」と「全体の段数」を計算して教えてください。
+               - 計算式：作り目 = (横幅 / 10) * {gauge_st}、段数 = (縦 / 10) * {gauge_row}
+            3. 💡 編むときのコツ
+               - そのアイテムを綺麗に仕上げるためのコツや、応援メッセージをフランクに（少しギャルっぽく明るく）伝えてください。
             """
             
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=user_message
-            )
-            st.success(response.text)
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=user_message
+                )
+                st.success("計算完了！✨")
+                # AIの回答をそのままドーンと表示！
+                st.markdown(response.text)
+                
+            except Exception as e:
+                st.error(f"エラーが発生したよ：{e}")
