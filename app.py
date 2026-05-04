@@ -69,7 +69,7 @@ with tab1:
 
 
 # ==========================================
-# タブ2：サイズ提案＆作り目計算機（完全無欠の相棒版！）
+# タブ2：サイズ提案＆作り目計算機（究極の完全無欠版！）
 # ==========================================
 with tab2:
     st.header("面倒なサイズ決めも算数も、全部相棒にお任せ！")
@@ -81,7 +81,7 @@ with tab2:
         "男性用ニット帽": {"w": 28, "l": 24},
         "手編みマフラー": {"w": 20, "l": 180},
         "ちびくま用セーター": {"w": 15, "l": 12},
-        "その他（自分で入力）": {"w": 0, "l": 0} # その他はAIに考えさせる
+        "その他（自分で入力）": {"w": 0, "l": 0} 
     }
 
     # セレクトボックスを表示
@@ -99,37 +99,56 @@ with tab2:
 
     st.write("---")
     st.subheader("🧶 あなたのゲージ（試し編みの結果）")
-    st.write("10cmピッタリじゃなくてもOK！測った長さと目数をそのまま入れてね✨")
     
-    # 💡 試し編みで測ったそのままの数字を入力させるUI
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**横の長さと目数**")
-        swatch_w = st.number_input("測った横幅 (cm)", min_value=1.0, value=10.0, step=0.5)
-        swatch_st = st.number_input("その幅にあった『目数』", min_value=1, value=10)
-    with col2:
-        st.markdown("**縦の長さと段数**")
-        swatch_l = st.number_input("測った縦の長さ (cm)", min_value=1.0, value=10.0, step=0.5)
-        swatch_row = st.number_input("その長さにあった『段数』", min_value=1, value=15)
+    # 💡 追加：ゲージがわかるかどうかの選択肢！
+    gauge_mode = st.radio(
+        "ゲージ（10cmの目数・段数）はどうする？",
+        ["測った数値を入力する！", "わからない（相棒に予測してもらう！）"]
+    )
+    
+    # 選んだボタンによって、表示する入力欄を切り替える！
+    if gauge_mode == "測った数値を入力する！":
+        st.write("10cmピッタリじゃなくてもOK！測った長さと目数をそのまま入れてね✨")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**横の長さと目数**")
+            swatch_w = st.number_input("測った横幅 (cm)", min_value=1.0, value=10.0, step=0.5)
+            swatch_st = st.number_input("その幅にあった『目数』", min_value=1, value=10)
+        with col2:
+            st.markdown("**縦の長さと段数**")
+            swatch_l = st.number_input("測った縦の長さ (cm)", min_value=1.0, value=10.0, step=0.5)
+            swatch_row = st.number_input("その長さにあった『段数』", min_value=1, value=15)
+    else:
+        st.info("OK！じゃあ使う毛糸の太さだけ教えて！相棒が一般的なゲージを推測するよ🧶")
+        yarn_weight = st.selectbox(
+            "使う毛糸の太さは？",
+            ["極太（ザク編み・マフラーなど）", "並太（一般的なセーターなど）", "合太（少し細め）", "中細（靴下・ベビー用など）", "わからない（完全AIお任せ）"]
+        )
         
     if st.button("相棒に全部お任せして計算！"):
         if not target_item_name:
             st.error("何を作りたいか入力してね！")
         else:
-            # 🧮 内部で「10cmあたりのゲージ」に自動換算！
-            gauge_st = (swatch_st / swatch_w) * 10
-            gauge_row = (swatch_row / swatch_l) * 10
+            st.write("相棒が最適なサイズとゲージを考えて計算中...🤔💭🪄")
             
-            st.info(f"💡 ちなみにあなたのゲージは、10cmあたり約 **{gauge_st:.1f}目 / {gauge_row:.1f}段** だよ！")
-            st.write("相棒が最適なサイズを考えて計算中...🤔💭🪄")
+            # AIに渡す条件をモードによって賢く切り替える！
+            if gauge_mode == "測った数値を入力する！":
+                gauge_st = (swatch_st / swatch_w) * 10
+                gauge_row = (swatch_row / swatch_l) * 10
+                st.info(f"💡 ちなみにあなたのゲージは、10cmあたり約 **{gauge_st:.1f}目 / {gauge_row:.1f}段** だよ！")
+                gauge_condition = f"ユーザーの毛糸の換算ゲージ：10cmあたり {gauge_st:.1f}目、{gauge_row:.1f}段"
+                calc_hint = f"計算式：作り目 = (横幅 / 10) * {gauge_st:.1f}、段数 = (縦 / 10) * {gauge_row:.1f}"
+            else:
+                gauge_condition = f"ユーザーはゲージを測っていません。使用する毛糸の太さは「{yarn_weight}」です。この太さの標準的なゲージ（10cmあたりの目数・段数）を推測して使用してください。"
+                calc_hint = "あなたが推測した標準ゲージを使って、必要な作り目と段数を計算してください。出力結果に『推測したゲージ（10cmあたり何目・何段としたか）』も明記してください。"
             
-            # AIに渡す指示（定番サイズと自由入力を両方さばく！）
+            # AIに渡す指示
             user_message = f"""
             あなたは編み物のプロフェッショナルな相棒です。ユーザーが「{target_item_name}」を編もうとしています。
             以下の条件に合わせて、ユーザーに最適なアドバイスをマークダウン形式で見やすく出力してください。
             
             【条件】
-            ユーザーの毛糸の換算ゲージ：10cmあたり {gauge_st}目、{gauge_row}段
+            {gauge_condition}
             {size_hint}
             
             【出力してほしい構成】
@@ -137,7 +156,7 @@ with tab2:
                - 「{target_item_name}」のおすすめサイズ（横幅 cm × 縦の長さ cm）を提示してください。
             2. 🧮 必要な目数と段数
                - 提示したサイズとゲージから算出した「必要な作り目」と「全体の段数」を計算して教えてください。（小数は四捨五入）
-               - 計算式：作り目 = (横幅 / 10) * {gauge_st}、段数 = (縦 / 10) * {gauge_row}
+               - {calc_hint}
             3. 💡 編むときのコツ
                - そのアイテムを綺麗に仕上げるためのコツや、応援メッセージをフランクに（少しギャルっぽく明るく）伝えてください。
             """
