@@ -69,40 +69,72 @@ with tab1:
 
 
 # ==========================================
-# タブ2：ゲージ・作り目計算機
+# タブ2：ゲージ・作り目計算機（超進化版！）
 # ==========================================
 with tab2:
     st.header("面倒な算数は相棒にお任せ！")
-    st.write("ゲージ（10cm四方の目数・段数）と、作りたいサイズを入力してね。")
+    st.write("作りたいアイテムを選ぶか、『その他』で自由に教えてね🧸")
+
+    # 1. 定番の選択肢（テンプレート）を用意
+    item_presets = {
+        "女性用ザク編みニット": {"w": 60, "l": 65},
+        "男性用ニット帽": {"w": 28, "l": 24},
+        "手編みマフラー": {"w": 20, "l": 180},
+        "ちびくま用セーター": {"w": 15, "l": 12},
+        "その他（自分で入力）": {"w": 50, "l": 50}
+    }
+
+    # セレクトボックスを表示
+    selected_item = st.selectbox("何を作る？", list(item_presets.keys()))
     
+    # 「その他」が選ばれた時だけ、入力欄を出す魔法！
+    if selected_item == "その他（自分で入力）":
+        target_item_name = st.text_input("何を作るか教えて！", placeholder="例：スマホショルダー、愛犬用腹巻きなど")
+    else:
+        target_item_name = selected_item
+
+    # 選択されたアイテムの標準値をセット
+    default_w = item_presets[selected_item]["w"]
+    default_l = item_presets[selected_item]["l"]
+
+    st.write("---")
     col1, col2 = st.columns(2)
     
     with col1:
         st.subheader("🧶 あなたのゲージ")
-        gauge_st = st.number_input("10cmあたりの『目数』", min_value=1, value=20)
-        gauge_row = st.number_input("10cmあたりの『段数』", min_value=1, value=26)
+        gauge_st = st.number_input("10cmあたりの『目数』", min_value=1, value=10)
+        gauge_row = st.number_input("10cmあたりの『段数』", min_value=1, value=15)
         
     with col2:
-        st.subheader("📏 作りたいサイズ")
-        target_width = st.number_input("横幅 (cm)", min_value=1, value=50)
-        target_length = st.number_input("縦の長さ (cm)", min_value=1, value=60)
+        st.subheader("📏 作りたいサイズ(cm)")
+        target_width = st.number_input("横幅", min_value=1, value=default_w)
+        target_length = st.number_input("縦の長さ", min_value=1, value=default_l)
         
     if st.button("作り目と段数を計算！"):
-        st.write("---")
-        
-        cast_on = int((target_width / 10) * gauge_st)
-        total_rows = int((target_length / 10) * gauge_row)
-        
-        st.write("### 🧮 計算結果")
-        st.info(f"✨ 必要な作り目： **{cast_on} 目**")
-        st.info(f"✨ 必要な段数： **{total_rows} 段**")
-        
-        st.write("相棒からのアドバイス...🤔")
-        
-        user_message = f"あなたは編み物の先生です。横{target_width}cm、縦{target_length}cm、作り目{cast_on}目、全部で{total_rows}段の作品を編むユーザーへ、2〜3行でフランクに励まして。"
-        
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=user_message
-        )
-        st.success(response.text)
+        # 入力がない場合のガード
+        if not target_item_name:
+            st.error("何を作るか入力してね！")
+        else:
+            st.write("---")
+            cast_on = int((target_width / 10) * gauge_st)
+            total_rows = int((target_length / 10) * gauge_row)
+            
+            st.write(f"### 🧮 {target_item_name} の計算結果")
+            st.info(f"✨ 必要な作り目： **{cast_on} 目**")
+            st.info(f"✨ 必要な段数： **{total_rows} 段**")
+            
+            st.write(f"相棒（Gemini 2.5）が {target_item_name} のコツを伝授...🤔")
+            
+            # AIに「自由入力されたアイテム名」を渡してアドバイスをもらう！
+            user_message = f"""
+            今から「{target_item_name}」を編みます。
+            サイズは 横{target_width}cm × 縦{target_length}cm。
+            計算の結果、作り目{cast_on}目、総段数{total_rows}段になりました。
+            このアイテム（{target_item_name}）を編む時のポイントや、綺麗に仕上げるコツを、編み物の先生としてフランクに教えて！
+            """
+            
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=user_message
+            )
+            st.success(response.text)
